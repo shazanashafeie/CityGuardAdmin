@@ -1,0 +1,387 @@
+﻿@page
+@model CityGuardAdmin.Pages.AnalyticsModel
+@using System.Text.Json
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Analytics";
+
+    var reportsByDayLabels = JsonSerializer.Serialize(
+        Model.Data.ReportsByDay.Keys.ToList());
+    var reportsByDayData = JsonSerializer.Serialize(
+        Model.Data.ReportsByDay.Values.ToList());
+
+    var reportTypeLabels = JsonSerializer.Serialize(
+        Model.Data.ReportsByType.Keys.ToList());
+    var reportTypeData = JsonSerializer.Serialize(
+        Model.Data.ReportsByType.Values.ToList());
+
+    var ratingLabels = JsonSerializer.Serialize(
+        Model.Data.RatingDistribution.Keys.ToList());
+    var ratingData = JsonSerializer.Serialize(
+        Model.Data.RatingDistribution.Values.ToList());
+
+    var userGrowthLabels = JsonSerializer.Serialize(
+        Model.Data.UserGrowthByDay.Keys.ToList());
+    var userGrowthData = JsonSerializer.Serialize(
+        Model.Data.UserGrowthByDay.Values.ToList());
+}
+
+<div class="mb-4">
+    <h1 class="h4 fw-bold text-dark mb-0">Analytics</h1>
+    <p class="text-muted small mt-1">
+        CityGuard platform insights — last 30 days
+    </p>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EDE9FE">
+                📋
+            </div>
+            <div class="h3 fw-bold mb-0">
+                @(Model.Data.PendingCount +
+                                Model.Data.VerifiedCount +
+                                Model.Data.RejectedCount)
+            </div>
+            <div class="text-muted small mt-1">Total Reports</div>
+            <div class="mt-2 d-flex gap-2 flex-wrap">
+                <span class="badge rounded-pill badge-pending small">
+                    @Model.Data.PendingCount pending
+                </span>
+                <span class="badge rounded-pill badge-verified small">
+                    @Model.Data.VerifiedCount verified
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#D1FAE5">⭐</div>
+            <div class="h3 fw-bold mb-0">
+                @Model.Data.AverageRating
+                <span class="fs-6 text-muted fw-normal">/5</span>
+            </div>
+            <div class="text-muted small mt-1">
+                Avg Safety Rating
+            </div>
+            <div class="mt-2">
+                <span class="badge rounded-pill bg-light text-secondary">
+                    @Model.Data.TotalRatings ratings total
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#DBEAFE">👥</div>
+            <div class="h3 fw-bold mb-0">
+                @Model.Data.TotalUsers
+            </div>
+            <div class="text-muted small mt-1">
+                Registered Users
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#FEF3C7">⚠️</div>
+            <div class="h3 fw-bold mb-0">
+                @Model.Data.ActiveDangerZones
+            </div>
+            <div class="text-muted small mt-1">
+                Active Danger Zones
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts row 1 -->
+<div class="row g-4 mb-4">
+
+    <!-- Reports over time -->
+    <div class="col-md-8">
+        <div class="card-custom p-4">
+            <h6 class="fw-semibold mb-3">Reports Over Time (Last 30 Days)</h6>
+            <canvas id="reportsTimeChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Reports by type -->
+    <div class="col-md-4">
+        <div class="card-custom p-4">
+            <h6 class="fw-semibold mb-3">Reports by Type</h6>
+            @if (!Model.Data.ReportsByType.Any())
+            {
+                <div class="text-center py-4 text-muted small">
+                    No reports yet
+                </div>
+            }
+            else
+            {
+                <canvas id="reportTypeChart" height="200"></canvas>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="row g-4 mb-4">
+
+    <!-- Safety rating distribution -->
+    <div class="col-md-6">
+        <div class="card-custom p-4">
+            <h6 class="fw-semibold mb-3">Safety Rating Distribution</h6>
+            @if (Model.Data.TotalRatings == 0)
+            {
+                <div class="text-center py-4 text-muted small">
+                    No ratings yet
+                </div>
+            }
+            else
+            {
+                <canvas id="ratingChart" height="180"></canvas>
+            }
+        </div>
+    </div>
+
+    <!-- User growth -->
+    <div class="col-md-6">
+        <div class="card-custom p-4">
+            <h6 class="fw-semibold mb-3">
+                Cumulative User Growth (Last 30 Days)
+            </h6>
+            <canvas id="userGrowthChart" height="180"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Report status breakdown -->
+<div class="card-custom p-4 mb-4">
+    <h6 class="fw-semibold mb-3">Report Status Breakdown</h6>
+    <div class="row g-3">
+        @{
+            var total = Model.Data.PendingCount +
+            Model.Data.VerifiedCount +
+            Model.Data.RejectedCount;
+        }
+        @foreach (var item in new[]
+                {
+                new { Label = "Pending", Count = Model.Data.PendingCount,
+                Color = "#D97706", Bg = "#FEF3C7" },
+                new { Label = "Verified", Count = Model.Data.VerifiedCount,
+                Color = "#059669", Bg = "#D1FAE5" },
+                new { Label = "Rejected", Count = Model.Data.RejectedCount,
+                Color = "#DC2626", Bg = "#FEE2E2" },
+                })
+        {
+            var pct = total > 0
+            ? (int)Math.Round((double)item.Count / total * 100)
+            : 0;
+            <div class="col-md-4">
+                <div class="p-3 rounded-3"
+                     style="background:@item.Bg">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-medium small"
+                              style="color:@item.Color">
+                            @item.Label
+                        </span>
+                        <span class="fw-bold"
+                              style="color:@item.Color">
+                            @item.Count
+                        </span>
+                    </div>
+                    <div class="progress rounded-pill"
+                         style="height:6px;background:rgba(0,0,0,0.08)">
+                        <div class="progress-bar rounded-pill"
+                             style="width:@pct%;background:@item.Color">
+                        </div>
+                    </div>
+                    <div class="text-end mt-1"
+                         style="font-size:0.75rem;color:@item.Color">
+                        @pct%
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const purple = '#7C3AED';
+        const purpleLight = 'rgba(124, 58, 237, 0.15)';
+
+        // ── Reports over time ────────────────────────────────
+        new Chart(
+            document.getElementById('reportsTimeChart'),
+            {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(reportsByDayLabels),
+                    datasets: [{
+                        label: 'Reports',
+                        data: @Html.Raw(reportsByDayData),
+                        borderColor: purple,
+                        backgroundColor: purpleLight,
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: purple,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        // ── Reports by type ──────────────────────────────────
+        @if (Model.Data.ReportsByType.Any())
+        {
+                <text>
+                new Chart(
+                    document.getElementById('reportTypeChart'),
+                    {
+                        type: 'doughnut',
+                        data: {
+                            labels: @Html.Raw(reportTypeLabels),
+                            datasets: [{
+                                data: @Html.Raw(reportTypeData),
+                                backgroundColor: [
+                                    '#7C3AED', '#A78BFA', '#C4B5FD',
+                                    '#DDD6FE', '#EDE9FE', '#E24B4A'
+                                ],
+                                borderWidth: 0,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        font: { size: 11 },
+                                        padding: 12,
+                                        usePointStyle: true
+                                    }
+                                }
+                            },
+                            cutout: '65%'
+                        }
+                    }
+                );
+                </text>
+        }
+
+        // ── Safety rating distribution ───────────────────────
+        @if (Model.Data.TotalRatings > 0)
+        {
+                <text>
+                new Chart(
+                    document.getElementById('ratingChart'),
+                    {
+                        type: 'bar',
+                        data: {
+                            labels: @Html.Raw(ratingLabels),
+                            datasets: [{
+                                label: 'Ratings',
+                                data: @Html.Raw(ratingData),
+                                backgroundColor: [
+                                    '#EF4444', '#F97316',
+                                    '#EAB308', '#22C55E', '#059669'
+                                ],
+                                borderRadius: 6,
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 10 } }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1,
+                                        font: { size: 10 }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                );
+                </text>
+        }
+
+        // ── User growth ──────────────────────────────────────
+        new Chart(
+            document.getElementById('userGrowthChart'),
+            {
+                type: 'line',
+                data: {
+                    labels: @Html.Raw(userGrowthLabels),
+                    datasets: [{
+                        label: 'Total Users',
+                        data: @Html.Raw(userGrowthData),
+                        borderColor: '#22C55E',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointBackgroundColor: '#22C55E',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                maxTicksLimit: 10,
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    </script>
+}

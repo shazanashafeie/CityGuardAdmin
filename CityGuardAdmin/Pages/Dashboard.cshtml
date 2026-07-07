@@ -1,0 +1,102 @@
+﻿@page
+@model CityGuardAdmin.Pages.DashboardModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="mb-4">
+    <h1 class="h4 fw-bold text-dark">Dashboard</h1>
+    <p class="text-muted small">Welcome back — here's what's happening in CityGuard</p>
+</div>
+
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card @(Model.Stats.PendingReports > 0 ? "border-danger" : "")">
+            <div class="stat-icon" style="background:#FEE2E2">🚨</div>
+            <div class="h3 fw-bold mb-0">@Model.Stats.PendingReports</div>
+            <div class="text-muted small mt-1">Pending Reports</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EDE9FE">📋</div>
+            <div class="h3 fw-bold mb-0">@Model.Stats.TotalReports</div>
+            <div class="text-muted small mt-1">Total Reports</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#D1FAE5">👥</div>
+            <div class="h3 fw-bold mb-0">@Model.Stats.TotalUsers</div>
+            <div class="text-muted small mt-1">Registered Users</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#FEF3C7">⚠️</div>
+            <div class="h3 fw-bold mb-0">@Model.Stats.ActiveDangerZones</div>
+            <div class="text-muted small mt-1">Active Danger Zones</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Reports -->
+<div class="card-custom p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-semibold mb-0">Recent Reports</h5>
+        <a href="/Reports" class="text-decoration-none small" style="color:#7C3AED">
+            View all →
+        </a>
+    </div>
+
+    @if (!Model.Stats.RecentReports.Any())
+    {
+        <div class="text-center py-4 text-muted">No reports yet</div>
+    }
+    else
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in Model.Stats.RecentReports)
+                {
+                    <tr>
+                        <td>
+                            <span class="fw-medium text-capitalize">
+                                @report.Type
+                            </span>
+                        </td>
+                        <td class="text-muted">
+                            @(report.Address.Length > 40
+                                                ? report.Address[..40] + "..."
+                                                : report.Address)
+                </td>
+                <td>
+                    <span class="badge rounded-pill badge-@report.Status">
+                        @report.Status
+                    </span>
+                </td>
+                <td class="text-muted">
+                    @report.CreatedAt.ToString("d MMM yyyy")
+                </td>
+                <td>
+                    <a href="/Reports" class="btn btn-sm btn-outline-secondary rounded-3">
+                        View
+                    </a>
+                </td>
+            </tr>
+                        }
+            </tbody>
+        </table>
+    }
+</div>

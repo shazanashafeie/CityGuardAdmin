@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CityGuard Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        :root {
+            --purple: #7C3AED;
+            --purple-light: #EDE9FE;
+            --purple-dark: #5B21B6;
+        }
+
+        body { background-color: #F8F9FA; }
+
+        .sidebar {
+            width: 250px;
+            min-height: 100vh;
+            background: white;
+            border-right: 1px solid #E5E7EB;
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-logo {
+            padding: 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .sidebar-logo .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--purple);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .nav-item-custom a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            color: #6B7280;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .nav-item-custom a:hover {
+            background: #F9FAFB;
+            color: #374151;
+        }
+
+        .nav-item-custom a.active {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .badge-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-verified {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .badge-rejected {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .btn-purple {
+            background: var(--purple);
+            color: white;
+            border: none;
+        }
+
+        .btn-purple:hover {
+            background: var(--purple-dark);
+            color: white;
+        }
+
+        .card-custom {
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+        }
+
+        .table th {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6B7280;
+            font-weight: 600;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .table td {
+            font-size: 0.875rem;
+            vertical-align: middle;
+            color: #374151;
+        }
+
+        .severity-high { color: #DC2626; font-weight: 600; }
+        .severity-medium { color: #D97706; font-weight: 600; }
+        .severity-low { color: #2563EB; font-weight: 600; }
+    </style>
+</head>
+<body>
+    @if (Context.Session.GetString("AdminEmail") != null)
+    {
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="logo-icon text-white">🛡️</div>
+                    <div>
+                        <div class="fw-bold text-dark" style="font-size:0.875rem">CityGuard</div>
+                        <div class="text-muted" style="font-size:0.75rem">Admin Portal</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="p-3 flex-grow-1">
+                <ul class="list-unstyled space-y-1">
+                    <li class="nav-item-custom">
+                        <a href="/Dashboard" class="@(Context.Request.Path.StartsWithSegments("/Dashboard") ? "active" : "")">
+                            <i class="bi bi-grid"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item-custom mt-1">
+                        <a href="/Reports" class="@(Context.Request.Path.StartsWithSegments("/Reports") ? "active" : "")">
+                            <i class="bi bi-exclamation-triangle"></i> Reports
+                        </a>
+                    </li>
+                    <li class="nav-item-custom mt-1">
+                        <a href="/DangerZones" class="@(Context.Request.Path.StartsWithSegments("/DangerZones") ? "active" : "")">
+                            <i class="bi bi-geo-alt"></i> Danger Zones
+                        </a>
+                    </li>
+                    <li class="nav-item-custom mt-1">
+                        <a href="/Users" class="@(Context.Request.Path.StartsWithSegments("/Users") ? "active" : "")">
+                            <i class="bi bi-people"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item-custom mt-1">
+                        <a href="/Analytics" class="@(Context.Request.Path.StartsWithSegments("/Analytics") ? "active" : "")">
+                            <i class="bi bi-bar-chart"></i> Analytics
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="p-3 border-top">
+                <div class="d-flex align-items-center gap-2 mb-2 px-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                         style="width:32px;height:32px;background:#EDE9FE;color:#7C3AED;font-size:0.875rem">
+                        @(Context.Session.GetString("AdminEmail")?[0].ToString().ToUpper() ?? "A")
+                    </div>
+                    <div style="font-size:0.75rem" class="text-muted text-truncate">
+                        @Context.Session.GetString("AdminEmail")
+                    </div>
+                </div>
+                <a href="/Logout" class="d-flex align-items-center gap-2 px-3 py-2 rounded-3 text-danger text-decoration-none"
+                   style="font-size:0.875rem">
+                    <i class="bi bi-box-arrow-left"></i> Sign Out
+                </a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            @RenderBody()
+        </div>
+    }
+    else
+    {
+        @RenderBody()
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

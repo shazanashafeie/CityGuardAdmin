@@ -1,0 +1,294 @@
+﻿@page
+@model CityGuardAdmin.Pages.ReportsModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h4 fw-bold text-dark mb-0">Reports</h1>
+        <p class="text-muted small mt-1">Review and verify community reports</p>
+    </div>
+</div>
+
+<!-- Filter tabs -->
+<div class="d-flex gap-2 mb-4">
+    @foreach (var filter in new[] { "all", "pending", "verified", "rejected" })
+    {
+        <a href="/Reports?status=@filter"
+           class="btn btn-sm rounded-3 @(Model.CurrentFilter == filter ? "btn-purple" : "btn-outline-secondary")">
+            @filter.ToString().ToUpper()
+            @if (filter == "pending" && Model.PendingCount > 0)
+            {
+                <span class="badge bg-danger ms-1 rounded-pill">
+                    @Model.PendingCount
+                </span>
+            }
+        </a>
+    }
+</div>
+
+<!-- Success/Error messages -->
+@if (!string.IsNullOrEmpty(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible rounded-3 d-flex align-items-center gap-2">
+        <i class="bi bi-check-circle"></i>
+        @Model.SuccessMessage
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible rounded-3 d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle"></i>
+        @Model.ErrorMessage
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Reports table -->
+<div class="card-custom">
+    @if (!Model.Reports.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <div style="font-size:3rem">📋</div>
+            <p class="mt-2">No reports found</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Type</th>
+                        <th>Description</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Photos</th>
+                        <th class="pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var report in Model.Reports)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <span class="fw-medium text-capitalize">
+                                    @report.Type
+                                </span>
+                            </td>
+                            <td style="max-width:200px">
+                                <span class="text-muted" style="font-size:0.8rem">
+                                    @(report.Description.Length > 60
+                                                                ? report.Description[..60] + "..."
+                                                                : report.Description)
+                                                                                 </span>
+                                                                             </td>
+                                                                             <td style="max-width:180px">
+                                                                                 <span class="text-muted" style="font-size:0.8rem">
+                                    @(report.Address.Length > 40
+                                                                ? report.Address[..40] + "..."
+                                                                : report.Address)
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill badge-@report.Status px-3 py-1">
+                            @report.Status
+                        </span>
+                    </td>
+                    <td class="text-muted" style="font-size:0.8rem">
+                        @report.CreatedAt.ToString("d MMM yyyy")
+                    </td>
+                    <td>
+                        @if (report.MediaUrls.Any())
+                                {
+                                    <span class="badge bg-secondary rounded-pill">
+                                        <i class="bi bi-image"></i>
+                                        @report.MediaUrls.Count
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">None</span>
+                                }
+                            </td>
+                            <td class="pe-4">
+                                <div class="d-flex gap-1">
+                                    <!-- View button -->
+                                    <button class="btn btn-sm btn-outline-secondary rounded-3"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#reportModal"
+                                            data-id="@report.Id"
+                                            data-type="@report.Type"
+                                            data-description="@report.Description"
+                                            data-address="@report.Address"
+                                            data-status="@report.Status"
+                                            data-date="@report.CreatedAt.ToString("d MMM yyyy HH:mm")"
+                                            data-photos="@string.Join(",", report.MediaUrls)">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+
+                                    @if (report.Status == "pending")
+                                    {
+                                        <!-- Verify button -->
+                                        <form method="post" asp-page-handler="Verify" class="d-inline">
+                                            <input type="hidden" name="reportId" value="@report.Id" />
+                                            <input type="hidden" name="address" value="@report.Address" />
+                                            <input type="hidden" name="type" value="@report.Type" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-success rounded-3"
+                                                    title="Verify report">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        </form>
+
+                                        <!-- Reject button -->
+                                        <form method="post" asp-page-handler="Reject" class="d-inline">
+                                            <input type="hidden" name="reportId" value="@report.Id" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-warning rounded-3"
+                                                    title="Reject report">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </form>
+                                    }
+
+                                    <!-- Delete button -->
+                                    <form method="post" asp-page-handler="Delete" class="d-inline"
+                                          onsubmit="return confirm('Delete this report permanently?')">
+                                        <input type="hidden" name="reportId" value="@report.Id" />
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger rounded-3"
+                                                title="Delete report">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Report Detail Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">Report Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <!-- Status badge -->
+                <div class="mb-3">
+                    <span class="badge rounded-pill px-3 py-2" id="modalStatus"></span>
+                </div>
+
+                <!-- Details grid -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background:#F9FAFB">
+                            <div class="text-muted small mb-1">
+                                <i class="bi bi-flag me-1"></i> Type
+                            </div>
+                            <div class="fw-medium text-capitalize" id="modalType"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3" style="background:#F9FAFB">
+                            <div class="text-muted small mb-1">
+                                <i class="bi bi-calendar me-1"></i> Date
+                            </div>
+                            <div class="fw-medium" id="modalDate"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="p-3 rounded-3 mb-3" style="background:#F9FAFB">
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-geo-alt me-1"></i> Location
+                    </div>
+                    <div class="fw-medium" id="modalAddress"></div>
+                </div>
+
+                <!-- Description -->
+                <div class="p-3 rounded-3 mb-3" style="background:#F9FAFB">
+                    <div class="text-muted small mb-1">
+                        <i class="bi bi-chat-left-text me-1"></i> Description
+                    </div>
+                    <div id="modalDescription" style="line-height:1.6"></div>
+                </div>
+
+                <!-- Photos -->
+                <div id="photosSection" style="display:none">
+                    <div class="text-muted small mb-2">
+                        <i class="bi bi-images me-1"></i> Photos
+                    </div>
+                    <div id="photosGrid" class="d-flex gap-2 flex-wrap"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button"
+                        class="btn btn-outline-secondary rounded-3"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('reportModal').addEventListener('show.bs.modal', function (e) {
+            const btn = e.relatedTarget;
+
+            const type = btn.getAttribute('data-type');
+            const description = btn.getAttribute('data-description');
+            const address = btn.getAttribute('data-address');
+            const status = btn.getAttribute('data-status');
+            const date = btn.getAttribute('data-date');
+            const photos = btn.getAttribute('data-photos');
+
+            document.getElementById('modalTitle').textContent =
+                type.charAt(0).toUpperCase() + type.slice(1) + ' Report';
+            document.getElementById('modalType').textContent = type;
+            document.getElementById('modalDescription').textContent = description;
+            document.getElementById('modalAddress').textContent = address;
+            document.getElementById('modalDate').textContent = date;
+
+            const statusBadge = document.getElementById('modalStatus');
+            statusBadge.textContent = status;
+            statusBadge.className = 'badge rounded-pill px-3 py-2 badge-' + status;
+
+            const photosSection = document.getElementById('photosSection');
+            const photosGrid = document.getElementById('photosGrid');
+            photosGrid.innerHTML = '';
+
+            if (photos && photos.length > 0) {
+                photosSection.style.display = 'block';
+                photos.split(',').forEach(url => {
+                    if (url.trim()) {
+                        const img = document.createElement('img');
+                        img.src = url.trim();
+                        img.className = 'rounded-3';
+                        img.style.cssText =
+                            'width:120px;height:120px;object-fit:cover;cursor:pointer';
+                        img.onclick = () => window.open(url.trim(), '_blank');
+                        photosGrid.appendChild(img);
+                    }
+                });
+            } else {
+                photosSection.style.display = 'none';
+            }
+        });
+    </script>
+}
