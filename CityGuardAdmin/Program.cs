@@ -6,25 +6,37 @@ using Google.Cloud.Firestore;
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Firebase Admin SDK ──────────────────────────────────────
+string? firebaseCredentialJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
+
+GoogleCredential credential;
+
+if (!string.IsNullOrEmpty(firebaseCredentialJson))
+{
+    // Used on Render (or any environment with the env var set)
+    credential = GoogleCredential.FromJson(firebaseCredentialJson);
+}
+else
+{
+    // Used locally on your PC, reads the file directly
+    credential = GoogleCredential.FromFile("firebase-adminsdk.json");
+}
+
 FirebaseApp.Create(new AppOptions
 {
-    Credential = GoogleCredential.FromFile("firebase-adminsdk.json")
+    Credential = credential
 });
-
-// Set environment variable for Firestore
-string credPath = Path.Combine(
-    Directory.GetCurrentDirectory(),
-    "firebase-adminsdk.json"
-);
-Environment.SetEnvironmentVariable(
-    "GOOGLE_APPLICATION_CREDENTIALS", credPath
-);
 
 // ── Register Firestore as singleton ─────────────────────────
 builder.Services.AddSingleton(provider =>
 {
-    return FirestoreDb.Create("cityguardshazlai");
+    var firestoreBuilder = new FirestoreDbBuilder
+    {
+        ProjectId = "cityguardshazlai",
+        Credential = credential
+    };
+    return firestoreBuilder.Build();
 });
+
 builder.Services.AddScoped<FirebaseService>();
 
 // ── Add Razor Pages + Session ────────────────────────────────
